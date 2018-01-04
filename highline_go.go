@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"log"
 	"fmt"
+	"os"
 )
 
 type MaskWriter struct {
@@ -12,38 +13,40 @@ type MaskWriter struct {
 	Writer io.Writer
 }
 
-func NewMaskWriter(maskStrings []string) *MaskWriter {
+func NewMaskWriter(writer io.Writer) *MaskWriter {
 	m := new(MaskWriter)
-	m.masks = maskStrings
+	m.Writer = writer
 	return m
 }
 
-func (m *MaskWriter) Write(p []byte) (n int, err error) {
-  str := string(p)
-	return m.Writer.Write(m.mask(str))
+func (m *MaskWriter) SetFilter(str []string) {
+	m.masks = str
 }
 
-func (m *MaskWriter) mask(str string) []byte {
-	for maskString := range m.masks {
-		fmt.Println(maskString)
+func (m *MaskWriter) Write(p []byte) (n int, err error) {
+	return m.Writer.Write(m.mask(p))
+}
+
+func (m *MaskWriter) mask(p []byte) []byte {
+	str := string(p)
+	for _, maskString := range m.masks {
 		re := regexp.MustCompile(fmt.Sprintf(`"%v":\s.+,`, maskString))
-		fmt.Println(fmt.Sprintf(`"%v":\s.+,`, maskString))
-		str = re.ReplaceAllString(string(str), "\"password\": \"'FILTERED'\",")
+		str = re.ReplaceAllString(string(str), fmt.Sprintf(`"%v": "[FILTERED]",`, maskString))
 	}
 	return []byte(str)
 }
 
 func main() {
-	m := NewMaskWriter([]string{"password", "initial_password"})
+	m := NewMaskWriter(os.Stdout)
+	m.SetFilter([]string{"password","initial_password"})
 	log.SetOutput(m)
 
 	str := `{
-"organization_id": 7,
-"password": "060920171850capybaratest",
-"display_name": "カピバラテスト",
-"project_code": "capybaratest",
-"email": "060920171850capybara@example.com"
-}`
+"id": 1,
+"password": "password",
+"display_name": "test",
+"email": "test@example.com"
+ }`
 
 	log.Print(str)
 }
