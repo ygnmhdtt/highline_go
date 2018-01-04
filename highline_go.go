@@ -1,35 +1,41 @@
 package main
 
 import (
-	"fmt"
+	"io"
 	"regexp"
+	"log"
+	"fmt"
 )
 
-type MaskStrings struct {
-	maskStrings []string
+type MaskWriter struct {
+	masks []string
+	Writer io.Writer
 }
 
-func NewMaskStrings(s []string) *MaskStrings {
-	m := new(MaskStrings)
-	m.maskStrings = s
-	fmt.Println(m.maskStrings)
+func NewMaskWriter(maskStrings []string) *MaskWriter {
+	m := new(MaskWriter)
+	m.masks = maskStrings
 	return m
 }
 
-func (m *MaskStrings) Mask(str string) string {
-	for maskString := range m.maskStrings {
-		// TODO: maskStringを使う
-		// TODO: maskStringが正規表現の場合に対応する
+func (m *MaskWriter) Write(p []byte) (n int, err error) {
+  str := string(p)
+	return m.Writer.Write(m.mask(str))
+}
+
+func (m *MaskWriter) mask(str string) []byte {
+	for maskString := range m.masks {
 		fmt.Println(maskString)
 		re := regexp.MustCompile(fmt.Sprintf(`"%v":\s.+,`, maskString))
 		fmt.Println(fmt.Sprintf(`"%v":\s.+,`, maskString))
-		str = re.ReplaceAllString(str, `"password": "[FILTERED]",`)
+		str = re.ReplaceAllString(string(str), "\"password\": \"'FILTERED'\",")
 	}
-	return str
+	return []byte(str)
 }
 
 func main() {
-	m := NewMaskStrings([]string{"password", "initial_password"})
+	m := NewMaskWriter([]string{"password", "initial_password"})
+	log.SetOutput(m)
 
 	str := `{
 "organization_id": 7,
@@ -39,5 +45,5 @@ func main() {
 "email": "060920171850capybara@example.com"
 }`
 
-	fmt.Println(m.Mask(str))
+	log.Print(str)
 }
