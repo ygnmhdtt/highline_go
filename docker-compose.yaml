@@ -1,0 +1,7 @@
+version: '2.2'
+services:
+  go:
+    build: .
+    command: 'tail -f /dev/null'
+    volumes:
+      - .:/golang/highline/
