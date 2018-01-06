@@ -1,15 +1,13 @@
-package main
+package highline
 
 import (
+	"fmt"
 	"io"
 	"regexp"
-	"log"
-	"fmt"
-	"os"
 )
 
 type MaskWriter struct {
-	masks []string
+	masks  []string
 	Writer io.Writer
 }
 
@@ -34,19 +32,4 @@ func (m *MaskWriter) mask(p []byte) []byte {
 		str = re.ReplaceAllString(string(str), fmt.Sprintf(`"%v": "[FILTERED]",`, maskString))
 	}
 	return []byte(str)
-}
-
-func main() {
-	m := NewMaskWriter(os.Stdout)
-	m.SetFilter([]string{"password","initial_password"})
-	log.SetOutput(m)
-
-	str := `{
-"id": 1,
-"password": "password",
-"display_name": "test",
-"email": "test@example.com"
- }`
-
-	log.Print(str)
 }
